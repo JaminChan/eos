@@ -26,8 +26,10 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
     const unsigned n_utword_bits = sizeof(tu_int) * CHAR_BIT;
     utwords n;
     n.all = a;
+//	printf("n.high:%04x n.low:%04x\n", n.s.high, n.s.low);
     utwords d;
     d.all = b;
+//	printf("d.high:%04x d.low:%04x\n", d.s.high, d.s.low);
     utwords q;
     utwords r;
     unsigned sr;
@@ -40,7 +42,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
              * ---
              * 0 X
              */
-            if (rem)
+            if (rem!=NULL)
                 *rem = n.s.low % d.s.low;
             return n.s.low / d.s.low;
         }
@@ -48,7 +50,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
          * ---
          * K X
          */
-        if (rem)
+        if (rem!=NULL)
             *rem = n.s.low;
         return 0;
     }
@@ -61,7 +63,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
              * ---
              * 0 0
              */
-            if (rem)
+            if (rem!=NULL)
                 *rem = n.s.high % d.s.low;
             return n.s.high / d.s.low;
         }
@@ -72,7 +74,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
              * ---
              * K 0
              */
-            if (rem)
+            if (rem!=NULL)
             {
                 r.s.high = n.s.high % d.s.high;
                 r.s.low = 0;
@@ -86,7 +88,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
          */
         if ((d.s.high & (d.s.high - 1)) == 0)     /* if d is a power of 2 */
         {
-            if (rem)
+            if (rem!=NULL)
             {
                 r.s.low = n.s.low;
                 r.s.high = n.s.high & (d.s.high - 1);
@@ -102,7 +104,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
         /* 0 <= sr <= n_udword_bits - 2 or sr large */
         if (sr > n_udword_bits - 2)
         {
-           if (rem)
+           if (rem!=NULL)
                 *rem = n.all;
             return 0;
         }
@@ -125,7 +127,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
              */
             if ((d.s.low & (d.s.low - 1)) == 0)     /* if d is a power of 2 */
             {
-                if (rem)
+                if (rem!=NULL)
                     *rem = n.s.low & (d.s.low - 1);
                 if (d.s.low == 1)
                     return n.all;
@@ -177,7 +179,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
             /*0 <= sr <= n_udword_bits - 1 or sr large */
             if (sr > n_udword_bits - 1)
             {
-               if (rem)
+               if (rem!=NULL)
                     *rem = n.all;
                 return 0;
             }
@@ -227,7 +229,7 @@ tu_int __udivmodti4(tu_int a, tu_int b, tu_int* rem)
         r.all -= d.all & s;
     }
     q.all = (q.all << 1) | carry;
-    if (rem)
+    if (rem!=NULL)
         *rem = r.all;
     return q.all;
 }
