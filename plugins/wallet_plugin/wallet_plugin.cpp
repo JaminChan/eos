@@ -56,15 +56,15 @@ void wallet_plugin::plugin_initialize(const variables_map& options) {
          std::chrono::seconds t(timeout);
          wallet_manager_ptr->set_timeout(t);
       }
-      if (options.count("yubihsm-authkey")) {
-         uint16_t key = options.at("yubihsm-authkey").as<uint16_t>();
-         string connector_endpoint = "http://localhost:12345";
-         if(options.count("yubihsm-url"))
-            connector_endpoint = options.at("yubihsm-url").as<string>();
-         try {
-            wallet_manager_ptr->own_and_use_wallet("YubiHSM", make_unique<yubihsm_wallet>(connector_endpoint, key));
-         }FC_LOG_AND_RETHROW()
-      }
+      //if (options.count("yubihsm-authkey")) {
+      //   uint16_t key = options.at("yubihsm-authkey").as<uint16_t>();
+      //   string connector_endpoint = "http://localhost:12345";
+      //   if(options.count("yubihsm-url"))
+      //      connector_endpoint = options.at("yubihsm-url").as<string>();
+      //   try {
+      //      wallet_manager_ptr->own_and_use_wallet("YubiHSM", make_unique<yubihsm_wallet>(connector_endpoint, key));
+      //   }FC_LOG_AND_RETHROW()
+      //}
    } FC_LOG_AND_RETHROW()
 }
 

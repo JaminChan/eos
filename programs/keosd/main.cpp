@@ -13,21 +13,31 @@
 
 #include <boost/exception/diagnostic_information.hpp>
 
+#ifndef WIN32
 #include <pwd.h>
+#else
+#pragma comment(lib, "crypt32.lib")
+#endif
 
 using namespace appbase;
 using namespace eosio;
 
 bfs::path determine_home_directory()
 {
-   bfs::path home;
-   struct passwd* pwd = getpwuid(getuid());
-   if(pwd) {
-      home = pwd->pw_dir;
-   }
-   else {
-      home = getenv("HOME");
-   }
+	bfs::path home;
+#ifndef WIN32
+	struct passwd* pwd = getpwuid(getuid());
+	if (pwd) {
+		home = pwd->pw_dir;
+	}
+	else {
+		home = getenv("PATH");
+	}
+#else
+	char tmp_dir[100] = { 0 };
+	GetEnvironmentVariable("HOME", tmp_dir, sizeof(tmp_dir));
+	home = tmp_dir;
+#endif
    if(home.empty())
       home = "./";
    return home;
@@ -43,7 +53,7 @@ int main(int argc, char** argv)
       if(!app().initialize<wallet_plugin, wallet_api_plugin, http_plugin>(argc, argv))
          return -1;
       auto& http = app().get_plugin<http_plugin>();
-      http.add_handler("/v1/keosd/stop", [](string, string, url_response_callback cb) { cb(200, "{}"); std::raise(SIGTERM); } );
+      http.add_handler("/v1/keosd/stop", [](string, string, url_response_callback cb) { cb(200, "{}"); /*std::raise(SIGTERM);*/ } );
       app().startup();
       app().exec();
    } catch (const fc::exception& e) {

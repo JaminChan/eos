@@ -4,6 +4,9 @@
 #include <eosio/chain/exceptions.hpp>
 
 #include "multi_index_includes.hpp"
+#ifdef WIN32
+#include <compiler_builtins.hpp>
+#endif
 
 
 namespace eosio { namespace chain { namespace resource_limits {
@@ -94,7 +97,19 @@ namespace eosio { namespace chain { namespace resource_limits {
             EOS_ASSERT(units <= max_raw_value, rate_limiting_state_inconsistent, "Usage exceeds maximum value representable after extending for precision");
             EOS_ASSERT(std::numeric_limits<decltype(consumed)>::max() - consumed >= units, rate_limiting_state_inconsistent, "Overflow in tracked usage when adding usage!");
 
-            auto value_ex_contrib = (uint64_t)(integer_divide_ceil((uint128_t)units * Precision, (uint128_t)window_size));
+#ifdef WIN32
+			uint128_t unit_all = units * Precision;
+			uint128_t wn_size = window_size;
+			auto value_ex_contrib = __udivti3(unit_all, wn_size);
+			uint128_t contrib_rem = __umodti3(unit_all, wn_size);
+			if (contrib_rem > 0)
+			{
+				value_ex_contrib = value_ex_contrib + 1;
+			}
+#else
+			auto value_ex_contrib = (uint64_t)(integer_divide_ceil((uint128_t)units * Precision, (uint128_t)window_size));
+#endif
+
             EOS_ASSERT(std::numeric_limits<decltype(value_ex)>::max() - value_ex >= value_ex_contrib, rate_limiting_state_inconsistent, "Overflow in accumulated value when adding usage!");
 
             if( last_ordinal != ordinal ) {

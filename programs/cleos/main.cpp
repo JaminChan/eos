@@ -126,6 +126,10 @@ Options:
 #include "config.hpp"
 #include "httpc.hpp"
 
+#ifdef WIN32
+#pragma comment(lib, "crypt32.lib")
+#endif
+
 using namespace std;
 using namespace eosio;
 using namespace eosio::chain;
