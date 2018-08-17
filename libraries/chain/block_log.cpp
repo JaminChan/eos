@@ -40,12 +40,16 @@ namespace eosio { namespace chain {
                   block_stream.close();
                   block_stream.open(block_file.generic_string().c_str(), LOG_WRITE);
                   block_write = true;
+#ifdef WIN32
+				  block_stream.seekp(0, std::ios::end);
+#endif
                }
             }
 
             inline void check_index_read() {
                try {
                   if (index_write) {
+
                      index_stream.close();
                      index_stream.open(index_file.generic_string().c_str(), LOG_READ);
                      index_write = false;
@@ -59,7 +63,10 @@ namespace eosio { namespace chain {
                   index_stream.close();
                   index_stream.open(index_file.generic_string().c_str(), LOG_WRITE);
                   index_write = true;
-               }
+#ifdef WIN32
+				  index_stream.seekp(0, std::ios::end);
+#endif
+			   }
             }
       };
    }
@@ -177,6 +184,7 @@ namespace eosio { namespace chain {
 
          uint64_t pos = my->block_stream.tellp();
 		 uint64_t index_pos = my->index_stream.tellp();
+		 uint32_t b_block_num = b->block_num();
          EOS_ASSERT(index_pos == sizeof(uint64_t) * (b->block_num() - 1),
                    block_log_append_fail,
                    "Append to index file occuring at wrong position.",
@@ -190,6 +198,7 @@ namespace eosio { namespace chain {
          my->head_id = b->id();
 
          flush();
+		 index_pos = my->index_stream.tellp();
 
          return pos;
       }
