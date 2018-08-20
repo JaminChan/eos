@@ -126,6 +126,9 @@ if( WIN32 )
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWIN32_LEAN_AND_MEAN" )
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNOMINMAX" )
 	set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DQUAD_PRECISION" )
+	
+	add_compile_options(/Z7)
+	add_compile_options(/Od)
 
 else( WIN32 ) # Apple AND Linux
 
@@ -199,10 +202,10 @@ add_subdirectory( libraries )
 add_subdirectory( contracts )
 add_subdirectory( plugins )
 add_subdirectory( programs )
-add_subdirectory( scripts )
+#add_subdirectory( scripts )
 #add_subdirectory( unittests )
 #add_subdirectory( tests )
-add_subdirectory( tools )
+#add_subdirectory( tools )
 #add_subdirectory( debian )
 
 install_directory_permissions(DIRECTORY ${CMAKE_INSTALL_FULL_SYSCONFDIR}/eosio)
