@@ -22,7 +22,7 @@ macro(compile_wast)
   endif()
   set(outfiles "")
   foreach(srcfile ${SOURCE_FILES})
-    
+
     get_filename_component(outfile ${srcfile} NAME)
     get_filename_component(extension ${srcfile} EXT)
     get_filename_component(infile ${srcfile} ABSOLUTE)
@@ -107,8 +107,6 @@ macro(add_wast_library)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
   )
-  #TODO: Fix this path on pending cmake install changes
-  install(FILES ${${ARG_TARGET}_BC_FILENAME} DESTINATION usr/share/eosio/contractsdk/lib)
 
 endmacro(add_wast_library)
 
@@ -141,32 +139,22 @@ macro(add_wast_executable)
   )
   set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.s)
 
-  STRING (REPLACE "\." "_" TARGET_VARIABLE "${target}")
-
-  if(WIN32)
-	STRING(REGEX REPLACE "/" "\\\\\\\\" DEST_TARGET ${DESTINATION_FOLDER}/${target})
-	set(WAST_VERBATIM)
-  else()
-	set(DEST_TARGET ${DESTINATION_FOLDER}/${target})
-	set(WAST_VERBATIM VERBATIM)
-  endif()
-
   if(ARG_MAX_MEMORY)
     set(MAX_MEMORY_PARAM "-m" ${ARG_MAX_MEMORY})
   endif()
 
-  add_custom_command(OUTPUT ${DEST_TARGET}.wast
+  add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.wast
     DEPENDS ${target}.s
-    COMMAND $<TARGET_FILE:eosio-s2wasm> -o ${DEST_TARGET}.wast -s 10240 ${MAX_MEMORY_PARAM} ${target}.s
+    COMMAND $<TARGET_FILE:eosio-s2wasm> -o ${DESTINATION_FOLDER}/${target}.wast -s 10240 ${MAX_MEMORY_PARAM} ${target}.s
     COMMENT "Generating WAST ${target}.wast"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
   )
   set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.wast)
 
-  add_custom_command(OUTPUT ${DEST_TARGET}.wasm
+  add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.wasm
     DEPENDS ${target}.wast
-    COMMAND $<TARGET_FILE:eosio-wast2wasm> ${DEST_TARGET}.wast ${DEST_TARGET}.wasm -n
+    COMMAND $<TARGET_FILE:eosio-wast2wasm> ${DESTINATION_FOLDER}/${target}.wast ${DESTINATION_FOLDER}/${target}.wasm -n
     COMMENT "Generating WASM ${target}.wasm"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
@@ -175,54 +163,31 @@ macro(add_wast_executable)
 
   STRING (REPLACE "." "_" TARGET_VARIABLE "${target}")
 
-  if(WIN32)
-    add_custom_command(OUTPUT ${DEST_TARGET}.wast.hpp
-	   DEPENDS ${DEST_TARGET}.wast
-	   COMMAND echo "const char* const ${TARGET_VARIABLE}_wast = R^\"=====(" > ${DEST_TARGET}.wast.hpp
-	   COMMAND cat ${DEST_TARGET}.wast >> ${DEST_TARGET}.wast.hpp
-	   COMMAND echo ")=====^\";" >> ${DEST_TARGET}.wast.hpp
-	   COMMENT "Generating ${target}.wast.hpp"
-	   ${WAST_VERBATIM}
-    )
-  
-	if (EXISTS ${DEST_TARGET}.abi )
-	 add_custom_command(OUTPUT ${DEST_TARGET}.abi.hpp
-	   DEPENDS ${DEST_TARGET}.abi
-	   COMMAND echo "const char* const ${TARGET_VARIABLE}_abi = R^\"=====(" > ${DEST_TARGET}.abi.hpp
-	   COMMAND cat ${DEST_TARGET}.abi >> ${DEST_TARGET}.abi.hpp
-	   COMMAND echo ")=====^\";" >> ${DEST_TARGET}.abi.hpp
-	   COMMENT "Generating ${target}.abi.hpp"
-	   ${WAST_VERBATIM}
-	 )
-     set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.abi.hpp)
-	 set(extra_target_dependency   ${DEST_TARGET}.abi.hpp)
-	endif()
-  else()
-    add_custom_command(OUTPUT ${DEST_TARGET}.wast.hpp
-	   DEPENDS ${DEST_TARGET}.wast
-	   COMMAND echo "const char* const ${TARGET_VARIABLE}_wast = R\"=====(" > ${DEST_TARGET}.wast.hpp
-	   COMMAND cat ${DEST_TARGET}.wast >> ${DEST_TARGET}.wast.hpp
-	   COMMAND echo ")=====\";" >> ${DEST_TARGET}.wast.hpp
-	   COMMENT "Generating ${target}.wast.hpp"
-	   ${WAST_VERBATIM}
-    )
+  add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.wast.hpp
+    DEPENDS ${DESTINATION_FOLDER}/${target}.wast
+    COMMAND echo "const char* const ${TARGET_VARIABLE}_wast = R\"=====("  > ${DESTINATION_FOLDER}/${target}.wast.hpp
+    COMMAND cat ${DESTINATION_FOLDER}/${target}.wast >> ${DESTINATION_FOLDER}/${target}.wast.hpp
+    COMMAND echo ")=====\";"  >> ${DESTINATION_FOLDER}/${target}.wast.hpp
+    COMMENT "Generating ${target}.wast.hpp"
+    VERBATIM
+  )
 
-	if (EXISTS ${DEST_TARGET}.abi )
-	 add_custom_command(OUTPUT ${DEST_TARGET}.abi.hpp
-	   DEPENDS ${DEST_TARGET}.abi
-	   COMMAND echo "const char* const ${TARGET_VARIABLE}_abi = R\"=====("  > ${DEST_TARGET}.abi.hpp
-	   COMMAND cat ${DEST_TARGET}.abi >> ${DEST_TARGET}.abi.hpp
-	   COMMAND echo ")=====\";"  >> ${DEST_TARGET}.abi.hpp
-	   COMMENT "Generating ${target}.abi.hpp"
-	   VERBATIM
-	 )
-     set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.abi.hpp)
-	 set(extra_target_dependency   ${DEST_TARGET}.abi.hpp)
-	endif()
+  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.abi )
+    add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.abi.hpp
+      DEPENDS ${DESTINATION_FOLDER}/${target}.abi
+      COMMAND echo "const char* const ${TARGET_VARIABLE}_abi = R\"=====("  > ${DESTINATION_FOLDER}/${target}.abi.hpp
+      COMMAND cat ${DESTINATION_FOLDER}/${target}.abi >> ${DESTINATION_FOLDER}/${target}.abi.hpp
+      COMMAND echo ")=====\";"  >> ${DESTINATION_FOLDER}/${target}.abi.hpp
+      COMMENT "Generating ${target}.abi.hpp"
+      VERBATIM
+    )
+    set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.abi.hpp)
+    set(extra_target_dependency   ${DESTINATION_FOLDER}/${target}.abi.hpp)
+  else()
   endif()
-  
-  add_custom_target(${target} ALL DEPENDS ${DEST_TARGET}.wast.hpp ${extra_target_dependency} ${DEST_TARGET}.wasm)
-  
+
+  add_custom_target(${target} ALL DEPENDS ${DESTINATION_FOLDER}/${target}.wast.hpp ${extra_target_dependency} ${DESTINATION_FOLDER}/${target}.wasm)
+
   set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${DESTINATION_FOLDER}/${target}.wast.hpp)
 
   set_property(TARGET ${target} PROPERTY INCLUDE_DIRECTORIES ${ARG_INCLUDE_FOLDERS})
@@ -230,7 +195,11 @@ macro(add_wast_executable)
   set(extra_target_dependency)
 
   # For CLion code insight
-  include_directories(..)
+  foreach(folder ${ARG_INCLUDE_FOLDERS})
+    include_directories(${folder})
+  endforeach()
+  include_directories(${Boost_INCLUDE_DIR})
+
   if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.hpp)
     set(HEADER_FILE ${CMAKE_CURRENT_SOURCE_DIR}/${target}.hpp)
   endif()
