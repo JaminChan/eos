@@ -154,7 +154,7 @@ FC_DECLARE_EXCEPTION( localized_exception, 10000000, "an error occured" );
   )
 
 string url = "http://127.0.0.1:8888/";
-string wallet_url = "http://127.0.0.1:8900/";
+string wallet_url = "http://127.0.0.1:8888/";
 bool no_verify = false;
 vector<string> headers;
 
@@ -173,6 +173,7 @@ uint32_t tx_max_net_usage = 0;
 vector<string> tx_permission;
 
 eosio::client::http::http_context context;
+bool _keepalive = false;
 
 void add_standard_transaction_options(CLI::App* cmd, string default_permission = "") {
    CLI::callback_t parse_expiration = [](CLI::results_t res) -> bool {
@@ -221,7 +222,11 @@ fc::variant call( const std::string& url,
       eosio::client::http::connection_param *cp = new eosio::client::http::connection_param(context, parse_url(url) + path,
               no_verify ? false : true, headers);
 
-      return eosio::client::http::do_http_call( *cp, fc::variant(v), print_request, print_response );
+	  sock_line sline = sock_line::newline;
+	  if (_keepalive) {
+		  sline = (url == ::url ? sock_line::nodeos : sock_line::wallet);
+	  }
+      return eosio::client::http::do_http_call( *cp, fc::variant(v), sline, print_request, print_response );
    }
    catch(boost::system::system_error& e) {
       if(url == ::url)
@@ -2452,8 +2457,8 @@ int main( int argc, char** argv ) {
    actionsSubcommand->add_option("account", contract_account,
                                  localized("The account providing the contract to execute"), true)->required();
    actionsSubcommand->add_option("action", action,
-                                 localized("A JSON string or filename defining the action to execute on the contract"), true)->required();
-   actionsSubcommand->add_option("data", data, localized("The arguments to the contract"))->required();
+                                 localized("The action to execute on the contract"), true)->required();
+   actionsSubcommand->add_option("data", data, localized("A JSON string or filename defining the arguments to the contract"))->required();
 
    add_standard_transaction_options(actionsSubcommand);
    actionsSubcommand->set_callback([&] {
@@ -2464,15 +2469,73 @@ int main( int argc, char** argv ) {
          } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action JSON data='${data}'", ("data", data))
       }
 
-      auto arg= fc::mutable_variant_object
-                ("code", contract_account)
-                ("action", action)
-                ("args", action_args_var);
-      auto result = call(json_to_bin_func, arg);
+	  if (action_args_var.is_array()) {
+		  auto accountPermissions = get_account_permissions(tx_permission);
+		  std::vector<chain::action> acts;
+		  fc::variants& vs = action_args_var.get_array();
+		  for (auto v = vs.begin(); v != vs.end(); v++) {
+			  auto arg = fc::mutable_variant_object
+			             ("code", contract_account)
+				         ("action", action)
+				         ("args", *v);
+			  auto result = call(json_to_bin_func, arg);
+			  acts.push_back(chain::action{accountPermissions, contract_account, action, result.get_object()["binargs"].as<bytes>()});
+		  }
+		  send_actions(std::forward<std::vector<chain::action>>(acts));
+	  }
+	  else {
+		  auto arg = fc::mutable_variant_object
+                     ("code", contract_account)
+			         ("action", action)
+			         ("args", action_args_var);
+		  auto result = call(json_to_bin_func, arg);
+		  auto accountPermissions = get_account_permissions(tx_permission);
+		  send_actions({chain::action{accountPermissions, contract_account, action, result.get_object()["binargs"].as<bytes>()}});
+	  }
+   });
 
-      auto accountPermissions = get_account_permissions(tx_permission);
+   // push actions
+   auto mactionsSubcommand = push->add_subcommand("actions", localized("Push actions with divided sign in transactions"));
+   mactionsSubcommand->fallthrough(false);
+   mactionsSubcommand->add_option("data", data,
+	   localized("A JSON string or filename defining the actions to execute"))->required();
 
-      send_actions({chain::action{accountPermissions, contract_account, action, result.get_object()["binargs"].as<bytes>()}});
+   add_standard_transaction_options(mactionsSubcommand);
+   mactionsSubcommand->set_callback([&] {
+	   fc::variant action_list;
+	   if (!data.empty()) {
+		   try {
+			   action_list = json_from_file_or_string(data, fc::json::relaxed_parser);
+		   } EOS_RETHROW_EXCEPTIONS(action_type_exception, "Fail to parse action JSON data='${data}'", ("data", data))
+	   }
+
+	   _keepalive = true;
+	   std::vector<chain::action> acts;
+	   fc::variants& vs = action_list.get_array();
+	   for (auto v : vs) {
+		   fc::variant_object& act = v.get_object();
+		   permissions.clear();
+		   permissions.push_back(act["permission"].get_string());
+		   auto accountPermissions = get_account_permissions(permissions);
+		   contract_account = act["account"].get_string();
+		   action = act["action"].get_string();
+		   const fc::variants& vars = act["data"].get_array();
+		   for (auto var : vars) {
+			   auto arg = fc::mutable_variant_object
+			              ("code", contract_account)
+				          ("action", action)
+			              ("args", var);
+			   auto result = call(json_to_bin_func, arg);
+			   acts.push_back(chain::action{ accountPermissions, contract_account, action, result.get_object()["binargs"].as<bytes>() });
+		   }
+		   if (act["submit"].get_string() == "true") {
+			   send_actions(std::forward<std::vector<chain::action>>(acts));
+			   acts.clear();
+		   }
+	   }
+	   if (acts.size() > 0) {
+		   send_actions(std::forward<std::vector<chain::action>>(acts));
+	   }
    });
 
    // push transaction

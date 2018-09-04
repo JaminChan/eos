@@ -71,9 +71,12 @@ namespace eosio { namespace client { namespace http {
       }
    };
 
+   enum sock_line { newline, nodeos, wallet };
+
    fc::variant do_http_call(
                              const connection_param& cp,
                              const fc::variant& postdata = fc::variant(),
+	                         sock_line line = newline,
                              bool print_request = false,
                              bool print_response = false);
 

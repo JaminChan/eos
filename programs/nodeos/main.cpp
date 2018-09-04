@@ -23,6 +23,8 @@
 #include <eosio/chain_api_plugin/chain_api_plugin.hpp>
 #include <eosio/history_api_plugin/history_api_plugin.hpp>
 #include <eosio/net_api_plugin/net_api_plugin.hpp>
+#include <eosio/wallet_api_plugin/wallet_api_plugin.hpp>
+#include <eosio/txn_test_gen_plugin/txn_test_gen_plugin.hpp>
 #pragma comment(lib, "crypt32.lib")
 #endif
 
@@ -111,6 +113,8 @@ int main(int argc, char** argv)
 	  app().register_plugin<net_plugin>();
 	  app().register_plugin<net_api_plugin>();
 	  app().register_plugin<producer_plugin>();
+	  app().register_plugin<wallet_api_plugin>();
+	  app().register_plugin<txn_test_gen_plugin>();
 #endif
 
       auto root = fc::app_path();

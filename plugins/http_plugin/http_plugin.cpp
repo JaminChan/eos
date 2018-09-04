@@ -208,6 +208,9 @@ namespace eosio {
                   return;
                }
 
+			   const auto& ka_str = req.get_header("Connection");
+			   con->set_keepalive(ka_str == "keep-alive");
+
                if( !access_control_allow_origin.empty()) {
                   con->append_header( "Access-Control-Allow-Origin", access_control_allow_origin );
                }

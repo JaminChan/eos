@@ -167,8 +167,12 @@ namespace eosio { namespace client { namespace http {
       }
    }
 
+   tcp::socket *_psocket_nodeos = NULL;
+   tcp::socket *_psocket_wallet = NULL;
+
    fc::variant do_http_call( const connection_param& cp,
                              const fc::variant& postdata,
+	                         sock_line line,
                              bool print_request,
                              bool print_response ) {
    std::string postjson;
@@ -185,8 +189,9 @@ namespace eosio { namespace client { namespace http {
    request_stream << "Host: " << host_header_value << "\r\n";
    request_stream << "content-length: " << postjson.size() << "\r\n";
    request_stream << "Accept: */*\r\n";
-   request_stream << "Connection: close\r\n";
-   request_stream << "\r\n";
+   request_stream << "Connection: ";
+   request_stream << (line == newline ? "close" : "keep-alive");
+   request_stream << "\r\n\r\n";
    // append more customized headers
    std::vector<string>::iterator itr;
    for (itr = cp.headers.begin(); itr != cp.headers.end(); itr++) {
@@ -208,9 +213,33 @@ namespace eosio { namespace client { namespace http {
 
    try {
       if(url.scheme == "http") {
-         tcp::socket socket(cp.context->ios);
-         do_connect(socket, url);
-         re = do_txrx(socket, request, status_code);
+		  switch (line) {
+		  case newline:
+		  {
+			  tcp::socket socket(cp.context->ios);
+			  do_connect(socket, url);
+			  re = do_txrx(socket, request, status_code);
+			  break;
+		  }
+		  case nodeos:
+		  {
+			  if (_psocket_nodeos == NULL) {
+				  _psocket_nodeos = new tcp::socket(cp.context->ios);
+				  do_connect(*_psocket_nodeos, url);
+			  }
+			  re = do_txrx(*_psocket_nodeos, request, status_code);
+			  break;
+		  }
+		  case wallet:
+		  {
+			  if (_psocket_wallet == NULL) {
+				  _psocket_wallet = new tcp::socket(cp.context->ios);
+				  do_connect(*_psocket_wallet, url);
+			  }
+			  re = do_txrx(*_psocket_wallet, request, status_code);
+			  break;
+			  }
+		  }
       }
       else { //https
          boost::asio::ssl::context ssl_context(boost::asio::ssl::context::sslv23_client);

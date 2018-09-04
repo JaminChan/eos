@@ -3,6 +3,12 @@
 #include <eosio/abi_generator/abi_generator.hpp>
 #include <fc/variant_object.hpp>
 
+
+#ifdef WIN32
+#pragma comment(lib, "crypt32.lib")
+#pragma comment(lib, "version.lib")
+#endif
+
 using namespace eosio;
 using namespace eosio::chain;
 
