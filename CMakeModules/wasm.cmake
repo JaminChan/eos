@@ -143,18 +143,26 @@ macro(add_wast_executable)
     set(MAX_MEMORY_PARAM "-m" ${ARG_MAX_MEMORY})
   endif()
 
-  add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.wast
+  if(WIN32)
+	STRING(REGEX REPLACE "/" "\\\\\\\\" DEST_TARGET ${DESTINATION_FOLDER}/${target})
+	set(WAST_VERBATIM)
+  else()
+	set(DEST_TARGET ${DESTINATION_FOLDER}/${target})
+	set(WAST_VERBATIM VERBATIM)
+  endif()
+
+  add_custom_command(OUTPUT ${DEST_TARGET}.wast
     DEPENDS ${target}.s
-    COMMAND $<TARGET_FILE:eosio-s2wasm> -o ${DESTINATION_FOLDER}/${target}.wast -s 10240 ${MAX_MEMORY_PARAM} ${target}.s
+    COMMAND $<TARGET_FILE:eosio-s2wasm> -o ${DEST_TARGET}.wast -s 10240 ${MAX_MEMORY_PARAM} ${target}.s
     COMMENT "Generating WAST ${target}.wast"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
   )
   set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.wast)
 
-  add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.wasm
+  add_custom_command(OUTPUT ${DEST_TARGET}.wasm
     DEPENDS ${target}.wast
-    COMMAND $<TARGET_FILE:eosio-wast2wasm> ${DESTINATION_FOLDER}/${target}.wast ${DESTINATION_FOLDER}/${target}.wasm -n
+    COMMAND $<TARGET_FILE:eosio-wast2wasm> ${DEST_TARGET}.wast ${DEST_TARGET}.wasm -n
     COMMENT "Generating WASM ${target}.wasm"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     VERBATIM
@@ -163,27 +171,50 @@ macro(add_wast_executable)
 
   STRING (REPLACE "." "_" TARGET_VARIABLE "${target}")
 
-  add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.wast.hpp
-    DEPENDS ${DESTINATION_FOLDER}/${target}.wast
-    COMMAND echo "const char* const ${TARGET_VARIABLE}_wast = R\"=====("  > ${DESTINATION_FOLDER}/${target}.wast.hpp
-    COMMAND cat ${DESTINATION_FOLDER}/${target}.wast >> ${DESTINATION_FOLDER}/${target}.wast.hpp
-    COMMAND echo ")=====\";"  >> ${DESTINATION_FOLDER}/${target}.wast.hpp
-    COMMENT "Generating ${target}.wast.hpp"
-    VERBATIM
-  )
-
-  if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${target}.abi )
-    add_custom_command(OUTPUT ${DESTINATION_FOLDER}/${target}.abi.hpp
-      DEPENDS ${DESTINATION_FOLDER}/${target}.abi
-      COMMAND echo "const char* const ${TARGET_VARIABLE}_abi = R\"=====("  > ${DESTINATION_FOLDER}/${target}.abi.hpp
-      COMMAND cat ${DESTINATION_FOLDER}/${target}.abi >> ${DESTINATION_FOLDER}/${target}.abi.hpp
-      COMMAND echo ")=====\";"  >> ${DESTINATION_FOLDER}/${target}.abi.hpp
-      COMMENT "Generating ${target}.abi.hpp"
-      VERBATIM
+  if(WIN32)
+    add_custom_command(OUTPUT ${DEST_TARGET}.wast.hpp
+	   DEPENDS ${DEST_TARGET}.wast
+	   COMMAND echo "const char* const ${TARGET_VARIABLE}_wast = R^\"=====(" > ${DEST_TARGET}.wast.hpp
+	   COMMAND cat ${DEST_TARGET}.wast >> ${DEST_TARGET}.wast.hpp
+	   COMMAND echo ")=====^\";" >> ${DEST_TARGET}.wast.hpp
+	   COMMENT "Generating ${target}.wast.hpp"
+	   ${WAST_VERBATIM}
     )
-    set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.abi.hpp)
-    set(extra_target_dependency   ${DESTINATION_FOLDER}/${target}.abi.hpp)
+  
+	if (EXISTS ${DEST_TARGET}.abi )
+	 add_custom_command(OUTPUT ${DEST_TARGET}.abi.hpp
+	   DEPENDS ${DEST_TARGET}.abi
+	   COMMAND echo "const char* const ${TARGET_VARIABLE}_abi = R^\"=====(" > ${DEST_TARGET}.abi.hpp
+	   COMMAND cat ${DEST_TARGET}.abi >> ${DEST_TARGET}.abi.hpp
+	   COMMAND echo ")=====^\";" >> ${DEST_TARGET}.abi.hpp
+	   COMMENT "Generating ${target}.abi.hpp"
+	   ${WAST_VERBATIM}
+	 )
+     set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.abi.hpp)
+	 set(extra_target_dependency   ${DEST_TARGET}.abi.hpp)
+	endif()
   else()
+    add_custom_command(OUTPUT ${DEST_TARGET}.wast.hpp
+	   DEPENDS ${DEST_TARGET}.wast
+	   COMMAND echo "const char* const ${TARGET_VARIABLE}_wast = R\"=====(" > ${DEST_TARGET}.wast.hpp
+	   COMMAND cat ${DEST_TARGET}.wast >> ${DEST_TARGET}.wast.hpp
+	   COMMAND echo ")=====\";" >> ${DEST_TARGET}.wast.hpp
+	   COMMENT "Generating ${target}.wast.hpp"
+	   ${WAST_VERBATIM}
+    )
+
+	if (EXISTS ${DEST_TARGET}.abi )
+	 add_custom_command(OUTPUT ${DEST_TARGET}.abi.hpp
+	   DEPENDS ${DEST_TARGET}.abi
+	   COMMAND echo "const char* const ${TARGET_VARIABLE}_abi = R\"=====("  > ${DEST_TARGET}.abi.hpp
+	   COMMAND cat ${DEST_TARGET}.abi >> ${DEST_TARGET}.abi.hpp
+	   COMMAND echo ")=====\";"  >> ${DEST_TARGET}.abi.hpp
+	   COMMENT "Generating ${target}.abi.hpp"
+	   VERBATIM
+	 )
+     set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_MAKE_CLEAN_FILES ${target}.abi.hpp)
+	 set(extra_target_dependency   ${DEST_TARGET}.abi.hpp)
+	endif()
   endif()
 
   add_custom_target(${target} ALL DEPENDS ${DESTINATION_FOLDER}/${target}.wast.hpp ${extra_target_dependency} ${DESTINATION_FOLDER}/${target}.wasm)

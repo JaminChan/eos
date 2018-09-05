@@ -125,6 +125,10 @@ Options:
 #include "config.hpp"
 #include "httpc.hpp"
 
+#ifdef WIN32
+#pragma comment(lib, "crypt32.lib")
+#endif
+
 using namespace std;
 using namespace eosio;
 using namespace eosio::chain;
@@ -170,6 +174,8 @@ uint32_t tx_max_net_usage = 0;
 vector<string> tx_permission;
 
 eosio::client::http::http_context context;
+
+bool _keepalive = false;
 
 void add_standard_transaction_options(CLI::App* cmd, string default_permission = "") {
    CLI::callback_t parse_expiration = [](CLI::results_t res) -> bool {
@@ -217,7 +223,11 @@ fc::variant call( const std::string& url,
                   const T& v ) {
    try {
       auto sp = std::make_unique<eosio::client::http::connection_param>(context, parse_url(url) + path, no_verify ? false : true, headers);
-      return eosio::client::http::do_http_call(*sp, fc::variant(v), print_request, print_response );
+	  sock_line sline = sock_line::newline;
+	  if (_keepalive) {
+		  sline = (url == ::url ? sock_line::nodeos : sock_line::wallet);
+	  }
+      return eosio::client::http::do_http_call(*sp, fc::variant(v),sline, print_request, print_response );
    }
    catch(boost::system::system_error& e) {
       if(url == ::url)
