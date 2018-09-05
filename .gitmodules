@@ -23,3 +23,6 @@
 [submodule "libraries/fc"]
 	path = libraries/fc
 	url = https://github.com/JaminChan/fc
+[submodule "externals/binaryen"]
+	path = externals/binaryen
+	url = https://github.com/JaminChan/binaryen
