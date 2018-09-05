@@ -82,3 +82,8 @@ var/lib/node_*
 .idea/
 *.iws
 .DS_Store
+externals/boost_1_67_0/*
+externals/gettext-0.19.8/*
+externals/mpir-3.0.0/*
+externals/zlib-1.2.11/*
+
