@@ -15,7 +15,7 @@
 param(
 [switch]$help,
 [switch]$clean,
-[string]$config="Debug",
+[string]$config="Release",
 [string]$buildType="full",
 [string]$extPath="",
 [string]$mpirArch="core2",
