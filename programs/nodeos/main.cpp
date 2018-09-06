@@ -63,7 +63,7 @@ void logging_conf_loop()
 {
 #ifdef WIN32
 	std::shared_ptr<boost::asio::signal_set> sighup_set(new boost::asio::signal_set(app().get_io_service(), SIGTERM, SIGABRT, SIGBREAK));
-#elif
+#else
 	std::shared_ptr<boost::asio::signal_set> sighup_set(new boost::asio::signal_set(app().get_io_service(), SIGHUP));
 #endif
    sighup_set->async_wait([sighup_set](const boost::system::error_code& err, int /*num*/) {
