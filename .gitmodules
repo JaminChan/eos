@@ -23,6 +23,3 @@
 	path = libraries/chainbase
 	url = https://github.com/JaminChan/chainbase
 	branch = master
-[submodule "libraries/fc"]
-	path = libraries/fc
-	url = https://github.com/JaminChan/fc
