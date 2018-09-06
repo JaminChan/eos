@@ -22,3 +22,7 @@
 	path = externals/binaryen
 	url = https://github.com/JaminChan/binaryen
 	branch = eosio
+[submodule "libraries/chainbase"]
+	path = libraries/chainbase
+	url = https://github.com/JaminChan/chainbase
+	branch = master
