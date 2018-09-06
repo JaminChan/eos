@@ -19,12 +19,12 @@ set ( builtins_sources
 )
 
 IF( WIN32 )
-  set(builtins_sources "${builtins_sources} 
-					       divti3.c
-						   modti3.c
-						   udivti3.c
-						   udivmodti4.c
-						   umodti3.c")
+  list( APPEND builtins_sources 
+		   divti3.c
+		   modti3.c
+		   udivti3.c
+		   udivmodti4.c
+		   umodti3.c )
 ENDIF(WIN32)
 
 file ( GLOB builtins_headers "${CMAKE_CURRENT_SOURCE_DIR}*.h" )
