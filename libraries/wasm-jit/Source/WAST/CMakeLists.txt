@@ -17,7 +17,11 @@ set(PublicHeaders
 	${WAVM_INCLUDE_DIR}/WAST/TestScript.h)
 include_directories(${WAVM_INCLUDE_DIR}/WAST)
 
-add_library(WAST SHARED ${Sources} ${PublicHeaders})
+IF(WIN32)
+  add_library(WAST SHARED ${Sources} ${PublicHeaders})
+ELSE()
+  add_library(WAST STATIC ${Sources} ${PublicHeaders})
+ENDIF()
 add_definitions(-DWAST_API=DLL_EXPORT)
 target_link_libraries(WAST Logging IR WASM)
 install(TARGETS WAST 

@@ -13,7 +13,11 @@ set(PublicHeaders
 	${WAVM_INCLUDE_DIR}/IR/Validate.h)
 include_directories(${WAVM_INCLUDE_DIR}/IR)
 
-add_library(IR SHARED ${Sources} ${PublicHeaders})
+IF(WIN32)
+  add_library(IR SHARED ${Sources} ${PublicHeaders})
+ELSE()
+  add_library(IR STATIC ${Sources} ${PublicHeaders})
+ENDIF()
 add_definitions(-DIR_API=DLL_EXPORT)
 target_link_libraries(IR Logging)
 

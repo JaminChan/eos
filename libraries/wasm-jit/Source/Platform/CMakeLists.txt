@@ -7,7 +7,11 @@ include_directories(${WAVM_INCLUDE_DIR}/Platform)
 
 add_definitions(-DPLATFORM_API=DLL_EXPORT)
 
-add_library(Platform SHARED ${Sources} ${PublicHeaders})
+IF(WIN32)
+  add_library(Platform SHARED ${Sources} ${PublicHeaders})
+ELSE()
+  add_library(Platform STATIC ${Sources} ${PublicHeaders})
+ENDIF()
 
 # Link with dl on Linux for dladdr.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

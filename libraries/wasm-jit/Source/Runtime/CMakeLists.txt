@@ -20,7 +20,11 @@ set(PublicHeaders
 	${WAVM_INCLUDE_DIR}/Runtime/TaggedValue.h)
 include_directories(${WAVM_INCLUDE_DIR}/Runtime)
 
-add_library(Runtime SHARED ${Sources} ${PublicHeaders})
+IF(WIN32)
+  add_library(Runtime SHARED ${Sources} ${PublicHeaders})
+ELSE()
+  add_library(Runtime STATIC ${Sources} ${PublicHeaders})
+ENDIF()
 
 # Find an installed build of LLVM
 find_package(LLVM 4.0 REQUIRED CONFIG)

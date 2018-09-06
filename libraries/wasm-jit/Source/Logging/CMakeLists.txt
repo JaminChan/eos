@@ -6,8 +6,11 @@ include_directories(${WAVM_INCLUDE_DIR}/Logging)
 
 add_definitions(-DLOGGING_API=DLL_EXPORT)
 
-add_library(Logging SHARED ${Sources} ${PublicHeaders})
-target_link_libraries(Logging Platform)
+IF(WIN32)
+  add_library(Logging SHARED ${Sources} ${PublicHeaders})
+ELSE()
+  add_library(Logging STATIC ${Sources} ${PublicHeaders})
+ENDIF()
 
 # Link with dl on Linux for dladdr.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
