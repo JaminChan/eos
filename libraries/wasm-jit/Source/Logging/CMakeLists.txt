@@ -11,6 +11,7 @@ IF(WIN32)
 ELSE()
   add_library(Logging STATIC ${Sources} ${PublicHeaders})
 ENDIF()
+target_link_libraries(Logging Platform)
 
 # Link with dl on Linux for dladdr.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
